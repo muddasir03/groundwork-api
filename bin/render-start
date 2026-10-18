@@ -3,4 +3,10 @@
 # Render start command (see render.yaml). Render's dockerCommand bypasses the
 # image's entrypoint, so prepare the database here before booting the server.
 ./bin/rails db:prepare
+
+# Staging only: load the fictional sample research (db/seeds.rb refuses otherwise).
+if [ "${SEED_SAMPLE_DATA}" = "true" ]; then
+  ./bin/rails db:seed
+fi
+
 exec ./bin/rails server

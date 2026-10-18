@@ -10,9 +10,100 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_18_195608) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_18_222830) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "citations", force: :cascade do |t|
+    t.bigint "source_id", null: false
+    t.string "citable_type", null: false
+    t.bigint "citable_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["citable_type", "citable_id"], name: "index_citations_on_citable"
+    t.index ["source_id", "citable_type", "citable_id"], name: "index_citations_uniqueness", unique: true
+    t.index ["source_id"], name: "index_citations_on_source_id"
+    t.check_constraint "citable_type::text = ANY (ARRAY['Claim'::character varying, 'Fact'::character varying, 'Problem'::character varying]::text[])", name: "citations_citable_type_values"
+  end
+
+  create_table "claims", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "section", null: false
+    t.integer "position", null: false
+    t.text "text", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "section", "position"], name: "index_claims_on_company_id_and_section_and_position", unique: true
+    t.index ["company_id"], name: "index_claims_on_company_id"
+    t.check_constraint "section::text = ANY (ARRAY['summary'::character varying, 'problems_core'::character varying, 'clients'::character varying, 'competitors'::character varying, 'goals'::character varying, 'product_engineering'::character varying, 'market_risks'::character varying]::text[])", name: "claims_section_values"
+  end
+
+  create_table "companies", force: :cascade do |t|
+    t.string "slug", null: false
+    t.string "name", null: false
+    t.string "description", null: false
+    t.string "city", null: false
+    t.string "country", null: false
+    t.string "sector", null: false
+    t.string "size", null: false
+    t.string "stage"
+    t.string "status", default: "draft", null: false
+    t.date "researched_at"
+    t.date "people_verified_at"
+    t.datetime "published_at"
+    t.integer "sources_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["city"], name: "index_companies_on_city"
+    t.index ["sector"], name: "index_companies_on_sector"
+    t.index ["slug"], name: "index_companies_on_slug", unique: true
+    t.index ["status", "country"], name: "index_companies_on_status_and_country"
+    t.check_constraint "size::text = ANY (ARRAY['1-50'::character varying, '51-200'::character varying, '201-1000'::character varying, '1000+'::character varying]::text[])", name: "companies_size_values"
+    t.check_constraint "slug::text ~ '^[a-z0-9]+(-[a-z0-9]+)*$'::text", name: "companies_slug_format"
+    t.check_constraint "status::text <> 'published'::text OR researched_at IS NOT NULL AND published_at IS NOT NULL", name: "companies_published_needs_dates"
+    t.check_constraint "status::text = ANY (ARRAY['draft'::character varying, 'researching'::character varying, 'in_review'::character varying, 'published'::character varying]::text[])", name: "companies_status_values"
+  end
+
+  create_table "facts", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.string "section", null: false
+    t.integer "position", null: false
+    t.string "label", null: false
+    t.text "value"
+    t.string "status", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "section", "position"], name: "index_facts_on_company_id_and_section_and_position", unique: true
+    t.index ["company_id"], name: "index_facts_on_company_id"
+    t.check_constraint "(status::text = 'verified'::text) = (value IS NOT NULL)", name: "facts_value_only_when_verified"
+    t.check_constraint "section::text = ANY (ARRAY['key_facts'::character varying, 'team_hiring'::character varying]::text[])", name: "facts_section_values"
+    t.check_constraint "status::text = ANY (ARRAY['verified'::character varying, 'unconfirmed'::character varying, 'not_public'::character varying]::text[])", name: "facts_status_values"
+  end
+
+  create_table "people", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.integer "position", null: false
+    t.string "name"
+    t.string "role", null: false
+    t.string "profile_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "position"], name: "index_people_on_company_id_and_position", unique: true
+    t.index ["company_id"], name: "index_people_on_company_id"
+    t.check_constraint "profile_url IS NULL OR profile_url::text ~ '^https?://'::text", name: "people_profile_url_http"
+  end
+
+  create_table "problems", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.integer "position", null: false
+    t.string "who", null: false
+    t.text "problem", null: false
+    t.text "solution", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "position"], name: "index_problems_on_company_id_and_position", unique: true
+    t.index ["company_id"], name: "index_problems_on_company_id"
+  end
 
   create_table "solid_cable_messages", force: :cascade do |t|
     t.binary "channel", null: false
@@ -184,6 +275,37 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_195608) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "sources", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.integer "position", null: false
+    t.string "title", null: false
+    t.string "url", null: false
+    t.string "date_kind", null: false
+    t.date "date", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "position"], name: "index_sources_on_company_id_and_position", unique: true
+    t.index ["company_id"], name: "index_sources_on_company_id"
+    t.check_constraint "date_kind::text = ANY (ARRAY['published'::character varying, 'accessed'::character varying]::text[])", name: "sources_date_kind_values"
+    t.check_constraint "url::text ~ '^https?://'::text", name: "sources_url_http"
+  end
+
+  create_table "technologies", force: :cascade do |t|
+    t.bigint "company_id", null: false
+    t.integer "position", null: false
+    t.string "name", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["company_id", "name"], name: "index_technologies_on_company_id_and_name", unique: true
+    t.index ["company_id", "position"], name: "index_technologies_on_company_id_and_position", unique: true
+    t.index ["company_id"], name: "index_technologies_on_company_id"
+  end
+
+  add_foreign_key "citations", "sources", on_delete: :cascade
+  add_foreign_key "claims", "companies", on_delete: :cascade
+  add_foreign_key "facts", "companies", on_delete: :cascade
+  add_foreign_key "people", "companies", on_delete: :cascade
+  add_foreign_key "problems", "companies", on_delete: :cascade
   add_foreign_key "solid_queue_batch_executions", "solid_queue_batches", column: "batch_id", on_delete: :cascade
   add_foreign_key "solid_queue_batch_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
@@ -192,4 +314,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_195608) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "sources", "companies", on_delete: :cascade
+  add_foreign_key "technologies", "companies", on_delete: :cascade
 end

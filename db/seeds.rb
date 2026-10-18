@@ -1,9 +1,16 @@
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
+# Seeds FICTIONAL sample research, matching the client's sample data (groundwork-client
+# lib/api/sampleData.ts). Every company, person and source is invented; links point to example.com.
 #
-# Example:
-#
-#   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
-#     MovieGenre.find_or_create_by!(name: genre_name)
-#   end
+# Safe to run repeatedly: each company is rebuilt from scratch.
+# Refuses to run in production-mode environments unless SEED_SAMPLE_DATA=true (set on staging only),
+# so fictional data can never reach the production database by accident.
+
+if Rails.env.production? && ENV["SEED_SAMPLE_DATA"] != "true"
+  puts "Skipping sample data: set SEED_SAMPLE_DATA=true to seed a production-mode environment (staging only)."
+  return
+end
+
+require_relative "seeds/sample_research"
+
+SampleResearch.seed!
+puts "Seeded #{Company.count} sample companies (#{Company.published.count} published)."
