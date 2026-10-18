@@ -1,7 +1,9 @@
 #!/bin/bash -e
 
-# If running the rails server then create or migrate existing database
-if [ "${@: -2:1}" == "./bin/rails" ] && [ "${@: -1:1}" == "server" ]; then
+# If running the rails server then create or migrate existing database.
+# Match anywhere in the command: Render may pass it as `sh -c "./bin/rails server"`,
+# and the Dockerfile's default CMD wraps it in Thruster.
+if [[ "$*" == *"./bin/rails server"* ]]; then
   ./bin/rails db:prepare
 fi
 
