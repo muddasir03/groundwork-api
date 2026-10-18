@@ -40,7 +40,9 @@ CI runs the same checks (`scan_ruby`, `lint`, `test`) and they must pass to merg
   Open the PR into `develop`.
 - **Releases** are a PR from `develop` into `main`, merged by the project owner only. Agents never
   merge into `main`.
-- After a release, open a PR from `main` back into `develop` so the release merge commit is on both.
+- `main` only receives merges from `develop`, so no back-merge is needed after a release (GitHub may
+  show `develop` as "behind" by the release merge commit; that's harmless). If a fix ever has to go
+  straight to `main`, merge `main` back into `develop` with a merge commit, not a squash.
 - Keep PRs small and focused on one change. Commit messages: imperative mood, and say *why*.
 - Update `README.md`, this file and `render.yaml` in the same PR when behaviour or setup changes.
 
