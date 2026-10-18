@@ -9,7 +9,7 @@ services:
     region: oregon
     branch: develop
     autoDeployTrigger: checksPass
-    dockerCommand: ./bin/rails server
+    dockerCommand: ./bin/render-start
     healthCheckPath: /up
     envVars:
       - key: RAILS_MASTER_KEY
@@ -30,7 +30,7 @@ services:
     region: oregon
     branch: main
     autoDeployTrigger: checksPass
-    dockerCommand: ./bin/rails server
+    dockerCommand: ./bin/render-start
     healthCheckPath: /up
     envVars:
       - key: RAILS_MASTER_KEY

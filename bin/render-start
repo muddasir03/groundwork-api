@@ -1,0 +1,6 @@
+#!/bin/bash -e
+
+# Render start command (see render.yaml). Render's dockerCommand bypasses the
+# image's entrypoint, so prepare the database here before booting the server.
+./bin/rails db:prepare
+exec ./bin/rails server
