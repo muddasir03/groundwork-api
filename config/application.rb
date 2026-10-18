@@ -28,5 +28,8 @@ module GroundworkApi
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # Requests per minute per IP for the public API (see Api::V1::BaseController).
+    config.x.api_rate_limit = ENV.fetch("API_RATE_LIMIT", 300).to_i
   end
 end

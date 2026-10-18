@@ -45,7 +45,7 @@ An internal admin area lets the team research, review, edit and publish companie
 
 ## MVP scope
 
-Groundwork is an MVP in early development. **No product features are built yet**; this repository currently contains the API foundation and its deployment setup.
+Groundwork is an MVP in early development. This repository currently serves published company research read-only (on fictional sample data); accounts, fit verdicts and the admin area are not built yet.
 
 - **Planned for the MVP:** the journey above, launching with about 30 researched software and SaaS companies in Spain, for engineers looking for roles there.
 - **Not included yet:** live job listings, visa sponsorship information, payments, sending messages or applying on your behalf, native mobile apps, and countries beyond Spain.
@@ -54,7 +54,7 @@ The full product brief is in [docs/PRODUCT.md](docs/PRODUCT.md).
 
 ## This repository
 
-The backend for Groundwork: it will store company research, user profiles, fit verdicts, contacts and shortlists, and power the admin area. The web app lives in [groundwork-client](https://github.com/muddasir03/groundwork-client).
+The backend for Groundwork. It stores company research and serves published reports read-only at `/api/v1/companies` (see [docs/API.md](docs/API.md)). User profiles, fit verdicts, shortlists and the admin area come next.
 
 Rails 8.1 (API mode), Ruby 4.0.7, PostgreSQL.
 
@@ -62,6 +62,7 @@ Rails 8.1 (API mode), Ruby 4.0.7, PostgreSQL.
 
 ```sh
 bin/setup        # installs gems, prepares the database, starts the server
+bin/rails db:seed  # fictional sample research (6 published companies)
 bin/dev          # http://localhost:3001 (the client runs on :3000)
 bin/rails test
 ```
@@ -91,6 +92,8 @@ Staging and production both run with `RAILS_ENV=production`; only their environm
 | `CORS_ORIGINS`        | the client's URL(s), comma-separated; `*` is a wildcard for preview URLs             |
 | `SOLID_QUEUE_IN_PUMA` | `true`: background jobs run inside the web process (set in `render.yaml`)            |
 | `WEB_CONCURRENCY`     | `0`: a single Puma process, to fit the free plan's 512 MB (set in `render.yaml`)     |
+| `SEED_SAMPLE_DATA`    | `true` on **staging only**: loads fictional sample research on start. Never on production |
+| `API_RATE_LIMIT`      | Optional. Requests per minute per IP for `/api/v1` (default 300)                      |
 
 Both Render services are defined in [`render.yaml`](render.yaml) and start with `bin/render-start`, which
 prepares the database (creating tables and running migrations) before booting the server. Solid Cache,

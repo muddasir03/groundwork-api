@@ -11,8 +11,11 @@ reports, a personal fit verdict, and the right people to contact. The web app is
 
 - **Read [docs/PRODUCT.md](docs/PRODUCT.md) before designing any feature.** Every feature must serve
   at least one of its four promises and must not break its principles (see "Product rules" below).
-- **Status:** foundation only. No product features, models or endpoints exist yet. Never describe
-  features as built when they aren't.
+- **Status:** company research is modelled (companies, sources, claims, facts, problems,
+  technologies, people, citations) and served read-only at `GET /api/v1/companies` and
+  `GET /api/v1/companies/:slug` (published companies only). No authentication, accounts, admin
+  endpoints, fit verdicts or AI features exist yet. Never describe features as built when they aren't.
+- **API reference: [docs/API.md](docs/API.md)**, kept in sync with every endpoint change.
 - **Stack:** Rails 8.1 in API mode, Ruby 4.0.7, PostgreSQL, Solid Queue/Cache/Cable, Minitest.
 
 ## Commands
@@ -59,6 +62,29 @@ CI runs the same checks (`scan_ruby`, `lint`, `test`) and they must pass to merg
 - List endpoints are paginated and filterable through query params (e.g. `country`, `sector`).
 - Use resourceful routes and RESTful actions; avoid custom verbs unless there is no fitting resource.
 
+### Serialization
+- JSON is built by plain Ruby serializers in `app/serializers/` (no serialization gem). Each one lists
+  every field explicitly, so new columns are never exposed by accident.
+- Keys are **camelCase** and must match the client's contract (groundwork-client `lib/api/types.ts`).
+  Change both, and `docs/API.md`, in step.
+- Personal data (fit verdicts, approaches, "also on your profile") never appears in public
+  endpoints; it belongs to authenticated, per-user endpoints.
+
+### Security
+- **Public endpoints expose published research only.** Unpublished records return the same 404 as
+  missing ones (`Company.published`), so nothing in the pipeline can be probed.
+- **Every write endpoint requires authentication and authorization** (none exist yet; admin auth
+  comes first). Never add an unauthenticated write.
+- URLs that reach the client are validated with `http_url: true` **and** a database check
+  constraint (http(s) only).
+- Rules the product depends on are enforced in the database as well as the model: check
+  constraints, foreign keys, NOT NULL. Test that the database refuses bad data even when
+  validations are skipped (`update_column`).
+- List endpoints paginate with a hard cap (`pagination` in `Api::V1::BaseController`).
+- `Api::V1::BaseController` rate limits per IP (`API_RATE_LIMIT`, default 300/minute).
+- Queries for a response must not grow with the data (preload with scopes like
+  `Company.with_report`); tests assert a fixed query count.
+
 ### Where code goes
 - **Controllers stay thin:** read params, authorize, call a model or service, render.
 - **Models** hold validations, associations, scopes and domain logic for one record.
@@ -89,7 +115,10 @@ CI runs the same checks (`scan_ruby`, `lint`, `test`) and they must pass to merg
 - Minitest, in `test/`. Every endpoint gets integration tests (`test/integration/` or
   `test/controllers/`) covering the success path and its main error cases. Models get unit tests for
   validations and domain logic. Services and jobs get their own tests.
-- Use fixtures (`test/fixtures/`). Tests never make real network calls; stub external services.
+- Build test data with the helpers in `test/support/` (e.g. `ResearchFactory#create_company`).
+  Tests never make real network calls; stub external services.
+- Database check constraints are tested inside `transaction(requires_new: true)`: a failed statement
+  aborts the enclosing test transaction otherwise.
 - A bug fix comes with a test that fails without the fix.
 
 ## Product rules that shape the code
@@ -119,7 +148,8 @@ These come from [docs/PRODUCT.md](docs/PRODUCT.md) and are requirements, not sug
 | Production  | `main`      | https://groundwork-api-production.onrender.com | Neon branch `production` |
 
 - Hosted on **Render's free plan**, defined in `render.yaml`. Render deploys only after CI passes.
-- Services start with `bin/render-start`, which runs `db:prepare` and then the server. Render's
+- Services start with `bin/render-start`, which runs `db:prepare`, seeds the fictional sample data
+  when `SEED_SAMPLE_DATA=true` (staging only), and then starts the server. Render's
   `dockerCommand` bypasses `bin/docker-entrypoint`, so keep database preparation in `bin/render-start`.
 - Free plan limits: **512 MB RAM** (`WEB_CONCURRENCY=0`, jobs run inside Puma via
   `SOLID_QUEUE_IN_PUMA`), and the service sleeps after 15 minutes idle. Keep memory use low.
