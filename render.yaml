@@ -1,0 +1,41 @@
+# Render Blueprint: staging deploys from `develop`, production from `main`.
+# Both run on Render's free plan; the database is Neon (see README).
+# Secrets marked `sync: false` are entered in the Render dashboard, never committed.
+services:
+  - type: web
+    name: groundwork-api-staging
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: develop
+    autoDeployTrigger: checksPass
+    dockerCommand: ./bin/rails server
+    healthCheckPath: /up
+    envVars:
+      - key: RAILS_MASTER_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: SOLID_QUEUE_IN_PUMA
+        value: "true"
+
+  - type: web
+    name: groundwork-api-production
+    runtime: docker
+    plan: free
+    region: oregon
+    branch: main
+    autoDeployTrigger: checksPass
+    dockerCommand: ./bin/rails server
+    healthCheckPath: /up
+    envVars:
+      - key: RAILS_MASTER_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: SOLID_QUEUE_IN_PUMA
+        value: "true"
