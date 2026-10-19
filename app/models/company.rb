@@ -19,6 +19,9 @@ class Company < ApplicationRecord
 
   validates :slug, presence: true, uniqueness: true, format: { with: SLUG_FORMAT }
   validates :name, :description, :city, :country, :sector, presence: true
+  validates :name, :city, :country, :sector, :stage, length: { maximum: 120 }
+  validates :description, length: { maximum: 300 }
+  validates :slug, length: { maximum: 80 }
   validates :size, inclusion: { in: SIZES }
   validates :researched_at, :published_at, presence: true, if: :published?
 

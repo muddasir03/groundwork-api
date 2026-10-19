@@ -20,6 +20,10 @@ services:
         sync: false
       - key: SOLID_QUEUE_IN_PUMA
         value: "true"
+      - key: ADMIN_BOOTSTRAP_EMAIL
+        sync: false
+      - key: ADMIN_BOOTSTRAP_PASSWORD
+        sync: false # remove after the first admin can log in
       - key: WEB_CONCURRENCY
         value: "0" # single Puma process; the free plan has 512 MB RAM
       - key: SEED_SAMPLE_DATA
@@ -43,5 +47,9 @@ services:
         sync: false
       - key: SOLID_QUEUE_IN_PUMA
         value: "true"
+      - key: ADMIN_BOOTSTRAP_EMAIL
+        sync: false
+      - key: ADMIN_BOOTSTRAP_PASSWORD
+        sync: false # remove after the first admin can log in
       - key: WEB_CONCURRENCY
         value: "0" # single Puma process; the free plan has 512 MB RAM

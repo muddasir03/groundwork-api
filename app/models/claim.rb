@@ -9,5 +9,5 @@ class Claim < ApplicationRecord
 
   validates :section, inclusion: { in: SECTIONS }
   validates :position, presence: true, uniqueness: { scope: [ :company_id, :section ] }
-  validates :text, presence: true
+  validates :text, presence: true, length: { maximum: 2000 }
 end

@@ -31,5 +31,8 @@ module GroundworkApi
 
     # Requests per minute per IP for the public API (see Api::V1::BaseController).
     config.x.api_rate_limit = ENV.fetch("API_RATE_LIMIT", 300).to_i
+    # Admin login attempts: per client IP per minute, and per email address per 15 minutes.
+    config.x.login_rate_limit_per_ip = 10
+    config.x.login_rate_limit_per_email = 10
   end
 end

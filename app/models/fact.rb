@@ -11,7 +11,8 @@ class Fact < ApplicationRecord
 
   validates :section, inclusion: { in: SECTIONS }
   validates :position, presence: true, uniqueness: { scope: [ :company_id, :section ] }
-  validates :label, presence: true
+  validates :label, presence: true, length: { maximum: 100 }
+  validates :value, length: { maximum: 500 }
   validates :value, presence: true, if: :verified?
   validates :value, absence: { message: "must be empty unless the fact is verified" }, unless: :verified?
 

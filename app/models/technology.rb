@@ -4,5 +4,5 @@ class Technology < ApplicationRecord
   belongs_to :company
 
   validates :position, presence: true, uniqueness: { scope: :company_id }
-  validates :name, presence: true, uniqueness: { scope: :company_id }
+  validates :name, presence: true, uniqueness: { scope: :company_id }, length: { maximum: 60 }
 end

@@ -10,9 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_18_222830) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_144407) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "audit_events", force: :cascade do |t|
+    t.bigint "user_id"
+    t.string "action", null: false
+    t.string "subject_type"
+    t.bigint "subject_id"
+    t.jsonb "details", default: {}, null: false
+    t.string "ip_address"
+    t.datetime "created_at", null: false
+    t.index ["created_at"], name: "index_audit_events_on_created_at"
+    t.index ["subject_type", "subject_id"], name: "index_audit_events_on_subject_type_and_subject_id"
+    t.index ["user_id"], name: "index_audit_events_on_user_id"
+  end
 
   create_table "citations", force: :cascade do |t|
     t.bigint "source_id", null: false
@@ -103,6 +116,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_222830) do
     t.datetime "updated_at", null: false
     t.index ["company_id", "position"], name: "index_problems_on_company_id_and_position", unique: true
     t.index ["company_id"], name: "index_problems_on_company_id"
+  end
+
+  create_table "sessions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "token_digest", null: false
+    t.datetime "expires_at", null: false
+    t.datetime "last_used_at", null: false
+    t.datetime "revoked_at"
+    t.string "ip_address"
+    t.string "user_agent"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["expires_at"], name: "index_sessions_on_expires_at"
+    t.index ["token_digest"], name: "index_sessions_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_sessions_on_user_id"
   end
 
   create_table "solid_cable_messages", force: :cascade do |t|
@@ -301,11 +329,24 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_18_222830) do
     t.index ["company_id"], name: "index_technologies_on_company_id"
   end
 
+  create_table "users", force: :cascade do |t|
+    t.string "email_address", null: false
+    t.string "password_digest", null: false
+    t.string "role", default: "member", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index "lower((email_address)::text)", name: "index_users_on_lower_email_address", unique: true
+    t.check_constraint "email_address::text = lower(btrim(email_address::text))", name: "users_email_normalized"
+    t.check_constraint "role::text = ANY (ARRAY['member'::character varying, 'admin'::character varying]::text[])", name: "users_role_values"
+  end
+
+  add_foreign_key "audit_events", "users", on_delete: :nullify
   add_foreign_key "citations", "sources", on_delete: :cascade
   add_foreign_key "claims", "companies", on_delete: :cascade
   add_foreign_key "facts", "companies", on_delete: :cascade
   add_foreign_key "people", "companies", on_delete: :cascade
   add_foreign_key "problems", "companies", on_delete: :cascade
+  add_foreign_key "sessions", "users", on_delete: :cascade
   add_foreign_key "solid_queue_batch_executions", "solid_queue_batches", column: "batch_id", on_delete: :cascade
   add_foreign_key "solid_queue_batch_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

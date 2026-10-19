@@ -63,6 +63,7 @@ Rails 8.1 (API mode), Ruby 4.0.7, PostgreSQL.
 ```sh
 bin/setup        # installs gems, prepares the database, starts the server
 bin/rails db:seed  # fictional sample research (6 published companies)
+bin/rails admin:create EMAIL=you@example.com   # an admin login (prompts for the password)
 bin/dev          # http://localhost:3001 (the client runs on :3000)
 bin/rails test
 ```
@@ -94,6 +95,7 @@ Staging and production both run with `RAILS_ENV=production`; only their environm
 | `WEB_CONCURRENCY`     | `0`: a single Puma process, to fit the free plan's 512 MB (set in `render.yaml`)     |
 | `SEED_SAMPLE_DATA`    | `true` on **staging only**: loads fictional sample research on start. Never on production |
 | `API_RATE_LIMIT`      | Optional. Requests per minute per IP for `/api/v1` (default 300)                      |
+| `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` | Creates the first admin on start if none exists. **Remove the password once you can log in.** |
 
 Both Render services are defined in [`render.yaml`](render.yaml) and start with `bin/render-start`, which
 prepares the database (creating tables and running migrations) before booting the server. Solid Cache,
