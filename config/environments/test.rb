@@ -22,10 +22,16 @@ Rails.application.configure do
   config.consider_all_requests_local = true
   config.cache_store = :null_store
 
+  # Fixed, test-only encryption keys, so tests and CI don't need the real credentials.
+  config.active_record.encryption.primary_key = "test-primary-key-0000000000000000"
+  config.active_record.encryption.deterministic_key = "test-deterministic-key-000000000"
+  config.active_record.encryption.key_derivation_salt = "test-key-derivation-salt-0000000"
+
   # Rate limiting needs a real store (the null store counts nothing); a low limit keeps the test fast.
   config.x.api_rate_limit = 50
   config.x.login_rate_limit_per_ip = 4
   config.x.login_rate_limit_per_email = 3
+  config.x.two_factor_rate_limit_per_ip = 12
   config.x.api_rate_limit_store = ActiveSupport::Cache::MemoryStore.new
 
   # Render exception templates for rescuable exceptions and raise for other exceptions.

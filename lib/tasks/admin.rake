@@ -36,3 +36,18 @@ namespace :admin do
     end
   end
 end
+
+namespace :admin do
+  # For an admin who lost both their authenticator and their recovery codes. Run it where you can
+  # reach the database (locally with DATABASE_URL set to the target database). Ends their sessions;
+  # they set up two-factor again at their next login.
+  desc "Turn off two-factor login for an admin: bin/rails admin:reset_two_factor EMAIL=you@example.com"
+  task reset_two_factor: :environment do
+    user = User.admin.find_by(email_address: ENV["EMAIL"].to_s.strip.downcase)
+    abort "No admin with that email." unless user
+
+    user.reset_two_factor!
+    AuditEvent.record!("admin.two_factor_reset", subject: user, via: "rake")
+    puts "Two-factor login reset for #{user.email_address}. They must set it up again at their next login."
+  end
+end

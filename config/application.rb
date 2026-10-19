@@ -34,5 +34,7 @@ module GroundworkApi
     # Admin login attempts: per client IP per minute, and per email address per 15 minutes.
     config.x.login_rate_limit_per_ip = 10
     config.x.login_rate_limit_per_email = 10
+    # Two-factor code checks per client IP per minute (each challenge also allows only 5 wrong codes).
+    config.x.two_factor_rate_limit_per_ip = 10
   end
 end

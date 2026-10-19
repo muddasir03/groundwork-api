@@ -7,6 +7,7 @@ module Api
       class BaseController < Api::V1::BaseController
         before_action :authenticate!
         before_action :require_admin!
+        before_action :require_two_factor!
         after_action :no_store
 
         private
@@ -24,6 +25,14 @@ module Api
           return if performed? || Current.user&.admin?
 
           render_error(:forbidden, "forbidden", "You don't have access to this.")
+        end
+
+        # Admins must use two-factor login. Until they set it up, their (password-only) session can
+        # only reach the setup endpoints; everything else answers 403 two_factor_setup_required.
+        def require_two_factor!
+          return if performed? || Current.user.two_factor_enabled?
+
+          render_error(:forbidden, "two_factor_setup_required", "Set up two-factor login to continue.")
         end
 
         def bearer_token

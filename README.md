@@ -64,6 +64,7 @@ Rails 8.1 (API mode), Ruby 4.0.7, PostgreSQL.
 bin/setup        # installs gems, prepares the database, starts the server
 bin/rails db:seed  # fictional sample research (6 published companies)
 bin/rails admin:create EMAIL=you@example.com   # an admin login (prompts for the password)
+bin/rails admin:reset_two_factor EMAIL=you@example.com   # lost authenticator and recovery codes
 bin/dev          # http://localhost:3001 (the client runs on :3000)
 bin/rails test
 ```

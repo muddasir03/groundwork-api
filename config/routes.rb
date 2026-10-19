@@ -10,7 +10,14 @@ Rails.application.routes.draw do
       resources :companies, only: [ :index, :show ], param: :slug, constraints: { slug: Company::SLUG_PATTERN }
 
       namespace :admin do
-        resource :session, only: [ :create, :show, :destroy ]
+        resource :session, only: [ :create, :show, :destroy ] do
+          post :verify
+        end
+        resource :two_factor, only: [ :show ], controller: "two_factor" do
+          post :setup
+          post :confirm
+          post :recovery_codes
+        end
         resources :companies, only: [ :index, :show, :create, :update ], param: :slug, constraints: { slug: Company::SLUG_PATTERN } do
           member do
             put :report, action: :replace_report

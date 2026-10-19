@@ -13,11 +13,13 @@ class AdminAuthTest < ActionDispatch::IntegrationTest
   end
 
   test "logging in returns a token once and stores only its digest" do
+    @admin = create_admin(email: "setup-pending@example.com", two_factor: false) # one-step login
     login
     assert_response :created
     token = json.dig("data", "token")
     assert_operator token.length, :>=, 40
-    assert_equal({ "id" => @admin.id.to_s, "emailAddress" => "admin@example.com", "role" => "admin" }, json.dig("data", "user"))
+    assert_equal({ "id" => @admin.id.to_s, "emailAddress" => "setup-pending@example.com", "role" => "admin", "twoFactorEnabled" => false },
+                 json.dig("data", "user"))
 
     stored = Session.last
     assert_equal Digest::SHA256.hexdigest(token), stored.token_digest
@@ -26,7 +28,7 @@ class AdminAuthTest < ActionDispatch::IntegrationTest
 
   test "email matching ignores case and surrounding spaces" do
     login(email: "  ADMIN@Example.com ")
-    assert_response :created
+    assert_response :accepted # password accepted; two-factor code next
   end
 
   test "wrong password, unknown email and non-admin accounts get the same answer" do
@@ -114,7 +116,8 @@ class AdminAuthTest < ActionDispatch::IntegrationTest
     login(password: "wrong password!!")
     headers = admin_headers(@admin)
     delete api_v1_admin_session_path, headers: headers
-    assert_equal %w[admin.login_failed admin.login admin.logout], AuditEvent.order(:id).pluck(:action)
+    actions = AuditEvent.order(:id).pluck(:action) - %w[admin.two_factor_setup_started admin.two_factor_enabled]
+    assert_equal %w[admin.login_failed admin.login_password_ok admin.login admin.logout], actions
     assert_equal "admin@example.com", AuditEvent.find_by(action: "admin.login_failed").details["email"]
   end
 
