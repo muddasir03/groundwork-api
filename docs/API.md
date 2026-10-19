@@ -93,3 +93,28 @@ Every `sourceIds` entry refers to a source in the same response's `sources` list
 - **Known follow-up:** the rate limit keys on `request.remote_ip`. Confirm on staging that this is the
   visitor's IP and not a proxy's (Render sits behind Cloudflare). Until then, all visitors behind one
   proxy IP could share a counter.
+
+## Admin endpoints
+
+Every endpoint below needs `Authorization: Bearer <token>` from a logged-in admin, and answers
+`401 unauthorized` without a valid session or `403 forbidden` for non-admins. Responses send
+`Cache-Control: no-store`. Request bodies use camelCase keys. Validation failures return
+`422` with every problem listed:
+`{ "error": { "code": "invalid", "message": "…", "details": [{ "path": "report.clients[1]", "message": "Must cite at least one source" }] } }`.
+See [SECURITY.md](SECURITY.md) for the design.
+
+| Method and path | Body | Result |
+|---|---|---|
+| `POST /admin/session` | `{ "emailAddress", "password" }` | `201 { data: { token, expiresAt, user } }`; `401 invalid_credentials`; `429` after too many attempts |
+| `GET /admin/session` | | `{ data: { expiresAt, user } }` |
+| `DELETE /admin/session` | | `204`; the token stops working |
+| `GET /admin/companies` | | Every company (all statuses) as rows `{ slug, name, status, lastResearchedAt, sourceCount, contactsVerified, contactsTotal }`, plus `meta.stats` |
+| `POST /admin/companies` | `{ company: { slug, name, description, city, country, sector, size, stage?, researchedAt?, peopleVerifiedAt? } }` | `201`, a new **draft** |
+| `GET /admin/companies/:slug` | | The full report (public shape) plus `status`, `publishedAt`, `updatedAt` |
+| `PATCH /admin/companies/:slug` | `{ company: { …details } }` | Updated company. `slug` and `status` can't be changed here |
+| `PUT /admin/companies/:slug/report` | `{ report: { sources, summary, problemsCore, clients, competitors, goals, productEngineering, marketRisks, keyFacts, teamHiring, problems, technologies, people } }` | Replaces the whole report in one transaction |
+| `PATCH /admin/companies/:slug/status` | `{ status }` | Moves along `draft → researching → in_review → published` (or back one step); publishing needs a summary, the core problem, a source and a research date |
+
+In the report body, `sources` carry a `ref` (an existing source's `id`, or any new key such as
+`"new-1"`), and claims, facts and problem rows cite them with `sourceRefs`. A fact whose `status` isn't
+`verified` never keeps a `value`. People with an empty `name` are stored as "name not public".

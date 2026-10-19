@@ -101,7 +101,7 @@ class CompaniesApiTest < ActionDispatch::IntegrationTest
   end
 
   test "rate limits each client" do
-    5.times { get api_v1_companies_path }
+    Rails.configuration.x.api_rate_limit.times { get api_v1_companies_path }
     assert_response :ok
     get api_v1_companies_path
     assert_response :too_many_requests

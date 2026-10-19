@@ -4,6 +4,8 @@ class Person < ApplicationRecord
   belongs_to :company
 
   validates :position, presence: true, uniqueness: { scope: :company_id }
-  validates :role, presence: true
+  validates :role, presence: true, length: { maximum: 150 }
+  validates :name, length: { maximum: 120 }
+  validates :profile_url, length: { maximum: 2000 }
   validates :profile_url, http_url: { allow_nil: true }
 end

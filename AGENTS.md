@@ -13,8 +13,11 @@ reports, a personal fit verdict, and the right people to contact. The web app is
   at least one of its four promises and must not break its principles (see "Product rules" below).
 - **Status:** company research is modelled (companies, sources, claims, facts, problems,
   technologies, people, citations) and served read-only at `GET /api/v1/companies` and
-  `GET /api/v1/companies/:slug` (published companies only). No authentication, accounts, admin
-  endpoints, fit verdicts or AI features exist yet. Never describe features as built when they aren't.
+  `GET /api/v1/companies/:slug` (published companies only). Admins log in and edit research through
+  `/api/v1/admin/*` (sessions, companies, report replacement, status changes). Member accounts, fit
+  verdicts and AI features don't exist yet. Never describe features as built when they aren't.
+- **Security design: [docs/SECURITY.md](docs/SECURITY.md).** Read it before touching authentication,
+  authorization or anything that exposes data, and update it in the same PR.
 - **API reference: [docs/API.md](docs/API.md)**, kept in sync with every endpoint change.
 - **Stack:** Rails 8.1 in API mode, Ruby 4.0.7, PostgreSQL, Solid Queue/Cache/Cable, Minitest.
 
@@ -73,8 +76,16 @@ CI runs the same checks (`scan_ruby`, `lint`, `test`) and they must pass to merg
 ### Security
 - **Public endpoints expose published research only.** Unpublished records return the same 404 as
   missing ones (`Company.published`), so nothing in the pipeline can be probed.
-- **Every write endpoint requires authentication and authorization** (none exist yet; admin auth
-  comes first). Never add an unauthenticated write.
+- **Every write endpoint requires authentication and authorization.** Admin endpoints live under
+  `Api::V1::Admin` and inherit `Api::V1::Admin::BaseController` (session + admin role, `no-store`).
+  A test walks every admin route and checks it refuses requests without a session; keep it passing.
+- Tokens come only from the `Authorization: Bearer` header. Store secrets as digests (session
+  tokens) or bcrypt hashes (passwords); never serialize them.
+- Audit every admin change with `audit!(...)` (AuditEvent, append-only).
+- Writes that span several records go through a service in one transaction and return every
+  validation problem with its path (see `Research::ReplaceReport`).
+- Accounts are never created through the API: `bin/rails admin:create` (local) or the one-time
+  `admin:bootstrap` (hosts without a console).
 - URLs that reach the client are validated with `http_url: true` **and** a database check
   constraint (http(s) only).
 - Rules the product depends on are enforced in the database as well as the model: check

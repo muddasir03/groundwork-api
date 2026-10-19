@@ -8,6 +8,16 @@ Rails.application.routes.draw do
   namespace :api do
     namespace :v1 do
       resources :companies, only: [ :index, :show ], param: :slug, constraints: { slug: Company::SLUG_PATTERN }
+
+      namespace :admin do
+        resource :session, only: [ :create, :show, :destroy ]
+        resources :companies, only: [ :index, :show, :create, :update ], param: :slug, constraints: { slug: Company::SLUG_PATTERN } do
+          member do
+            put :report, action: :replace_report
+            patch :status, action: :update_status
+          end
+        end
+      end
     end
   end
 end

@@ -5,5 +5,5 @@ class Problem < ApplicationRecord
   belongs_to :company
 
   validates :position, presence: true, uniqueness: { scope: :company_id }
-  validates :who, :problem, :solution, presence: true
+  validates :who, :problem, :solution, presence: true, length: { maximum: 500 }
 end

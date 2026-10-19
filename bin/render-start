@@ -9,4 +9,7 @@ if [ "${SEED_SAMPLE_DATA}" = "true" ]; then
   ./bin/rails db:seed
 fi
 
+# Creates the first admin from ADMIN_BOOTSTRAP_* variables if no admin exists yet (lib/tasks/admin.rake).
+./bin/rails admin:bootstrap
+
 exec ./bin/rails server

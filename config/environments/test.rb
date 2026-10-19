@@ -23,7 +23,9 @@ Rails.application.configure do
   config.cache_store = :null_store
 
   # Rate limiting needs a real store (the null store counts nothing); a low limit keeps the test fast.
-  config.x.api_rate_limit = 5
+  config.x.api_rate_limit = 50
+  config.x.login_rate_limit_per_ip = 4
+  config.x.login_rate_limit_per_email = 3
   config.x.api_rate_limit_store = ActiveSupport::Cache::MemoryStore.new
 
   # Render exception templates for rescuable exceptions and raise for other exceptions.
