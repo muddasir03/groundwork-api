@@ -97,7 +97,9 @@ Every `sourceIds` entry refers to a source in the same response's `sources` list
 ## Admin endpoints
 
 Every endpoint below needs `Authorization: Bearer <token>` from a logged-in admin, and answers
-`401 unauthorized` without a valid session or `403 forbidden` for non-admins. Responses send
+`401 unauthorized` without a valid session, `403 forbidden` for non-admins, and
+`403 two_factor_setup_required` until the admin has set up two-factor login (except the session and
+two-factor setup endpoints). Responses send
 `Cache-Control: no-store`. Request bodies use camelCase keys. Validation failures return
 `422` with every problem listed:
 `{ "error": { "code": "invalid", "message": "…", "details": [{ "path": "report.clients[1]", "message": "Must cite at least one source" }] } }`.
@@ -105,9 +107,14 @@ See [SECURITY.md](SECURITY.md) for the design.
 
 | Method and path | Body | Result |
 |---|---|---|
-| `POST /admin/session` | `{ "emailAddress", "password" }` | `201 { data: { token, expiresAt, user } }`; `401 invalid_credentials`; `429` after too many attempts |
+| `POST /admin/session` | `{ "emailAddress", "password" }` | `202 { data: { twoFactorRequired: true, challengeToken, expiresAt } }` (two-factor on); `201 { data: { token, expiresAt, user } }` only before two-factor is set up; `401 invalid_credentials`; `429` |
+| `POST /admin/session/verify` | `{ "challengeToken", "code" }` or `{ "challengeToken", "recoveryCode" }` | `201 { data: { token, expiresAt, user } }`; `401 invalid_code`; `429` |
 | `GET /admin/session` | | `{ data: { expiresAt, user } }` |
 | `DELETE /admin/session` | | `204`; the token stops working |
+| `GET /admin/two_factor` | | `{ data: { enabled, enabledAt, remainingRecoveryCodes } }` |
+| `POST /admin/two_factor/setup` | | `{ data: { secret, otpauthUri, qrCodeDataUri } }`; `409` if already on |
+| `POST /admin/two_factor/confirm` | `{ "code" }` | `{ data: { recoveryCodes } }` (shown once); ends the admin's other sessions; `422 invalid_code` |
+| `POST /admin/two_factor/recovery_codes` | `{ "code" }` | New `{ data: { recoveryCodes } }`, replacing the old ones |
 | `GET /admin/companies` | | Every company (all statuses) as rows `{ slug, name, status, lastResearchedAt, sourceCount, contactsVerified, contactsTotal }`, plus `meta.stats` |
 | `POST /admin/companies` | `{ company: { slug, name, description, city, country, sector, size, stage?, researchedAt?, peopleVerifiedAt? } }` | `201`, a new **draft** |
 | `GET /admin/companies/:slug` | | The full report (public shape) plus `status`, `publishedAt`, `updatedAt` |

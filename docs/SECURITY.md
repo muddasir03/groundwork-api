@@ -35,6 +35,24 @@ Browser ──HTTPS──▶ Next.js on Vercel ──HTTPS + Bearer token──�
   - rate limited per IP (10/minute) and per email address (10 per 15 minutes; also covers attacks
     spread over many IPs), then `429`;
   - every attempt is audited (`admin.login`, `admin.login_failed`).
+- **Two-factor login (required for admins)**: authenticator-app codes (TOTP, RFC 6238, via `rotp`).
+  - With two-factor on, a correct password returns only a **login challenge** (`202`): a 256-bit
+    token, stored as a digest, valid for 5 minutes, single-use, dead after 5 wrong codes, and useless
+    as a session token. `POST /admin/session/verify` exchanges it plus a valid code for a session.
+  - A code is accepted within ±30 s of clock drift and **only once** (the last accepted time step is
+    stored and checked under a row lock), so an intercepted code can't be replayed.
+  - The TOTP secret is **encrypted at rest** (Active Record Encryption; keys in the encrypted
+    credentials, test-only keys in `config/environments/test.rb`).
+  - **Recovery codes**: 10 random codes (~50 bits each), shown once, stored as bcrypt hashes, each
+    usable once. They can be regenerated with a valid code.
+  - **Enforcement**: an admin without two-factor gets a session that can only reach the setup
+    endpoints; everything else answers `403 two_factor_setup_required`. Confirming setup **ends every
+    other session** of that admin, so anyone who logged in with a stolen password before setup is
+    cut off.
+  - Setup returns the QR code as an SVG `data:` URI, shown with `<img>` (which can't run scripts).
+  - Lost device and recovery codes: `bin/rails admin:reset_two_factor EMAIL=…` (run with access to
+    the database). It ends their sessions; they set up two-factor again at the next login.
+  - Codes are filtered from logs (`filter_parameters` includes `code`).
 - **Sessions**: a 256-bit random token, returned once at login. Only its SHA-256 digest is stored,
   so a database leak doesn't grant access. A session ends after **8 hours**, after **2 idle hours**,
   or at logout (revoked on the server). Expired sessions are deleted daily.
@@ -69,7 +87,8 @@ Browser ──HTTPS──▶ Next.js on Vercel ──HTTPS + Bearer token──�
 
 ## Audit log
 
-`audit_events` records logins, failed logins, logouts, company creation, edits, report replacements
+`audit_events` records logins (with the method: password, totp or recovery_code), failed logins and
+failed codes, two-factor setup and resets, logouts, company creation, edits, report replacements
 and status changes, with the admin, subject, IP and details. Rows are read-only in the app.
 
 ## Client (groundwork-client)
@@ -85,6 +104,5 @@ and status changes, with the admin, subject, IP and details. Rows are read-only 
 - **Rate limiting by IP behind proxies.** The API sees the visitor's IP for public requests only if
   Render/Cloudflare forward it in a way Rails trusts; admin logins arrive from Vercel's servers. The
   per-email login limit protects accounts regardless. Verify `request.remote_ip` on staging.
-- **No multi-factor authentication yet.** Recommended before inviting more admins.
 - **No account lockout** (deliberately: lockouts let attackers lock admins out). Rate limits apply instead.
 - Audit log retention and review screens don't exist yet.

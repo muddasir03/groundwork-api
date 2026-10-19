@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_10_19_144407) do
+ActiveRecord::Schema[8.1].define(version: 2026_10_19_151135) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -93,6 +93,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_144407) do
     t.check_constraint "status::text = ANY (ARRAY['verified'::character varying, 'unconfirmed'::character varying, 'not_public'::character varying]::text[])", name: "facts_status_values"
   end
 
+  create_table "login_challenges", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "token_digest", null: false
+    t.datetime "expires_at", null: false
+    t.integer "failed_attempts", default: 0, null: false
+    t.datetime "consumed_at"
+    t.string "ip_address"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["expires_at"], name: "index_login_challenges_on_expires_at"
+    t.index ["token_digest"], name: "index_login_challenges_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_login_challenges_on_user_id"
+  end
+
   create_table "people", force: :cascade do |t|
     t.bigint "company_id", null: false
     t.integer "position", null: false
@@ -116,6 +130,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_144407) do
     t.datetime "updated_at", null: false
     t.index ["company_id", "position"], name: "index_problems_on_company_id_and_position", unique: true
     t.index ["company_id"], name: "index_problems_on_company_id"
+  end
+
+  create_table "recovery_codes", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "code_digest", null: false
+    t.datetime "used_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_recovery_codes_on_user_id"
   end
 
   create_table "sessions", force: :cascade do |t|
@@ -335,6 +358,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_144407) do
     t.string "role", default: "member", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.text "otp_secret"
+    t.text "otp_pending_secret"
+    t.datetime "otp_enabled_at"
+    t.bigint "otp_last_used_step"
     t.index "lower((email_address)::text)", name: "index_users_on_lower_email_address", unique: true
     t.check_constraint "email_address::text = lower(btrim(email_address::text))", name: "users_email_normalized"
     t.check_constraint "role::text = ANY (ARRAY['member'::character varying, 'admin'::character varying]::text[])", name: "users_role_values"
@@ -344,8 +371,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_10_19_144407) do
   add_foreign_key "citations", "sources", on_delete: :cascade
   add_foreign_key "claims", "companies", on_delete: :cascade
   add_foreign_key "facts", "companies", on_delete: :cascade
+  add_foreign_key "login_challenges", "users", on_delete: :cascade
   add_foreign_key "people", "companies", on_delete: :cascade
   add_foreign_key "problems", "companies", on_delete: :cascade
+  add_foreign_key "recovery_codes", "users", on_delete: :cascade
   add_foreign_key "sessions", "users", on_delete: :cascade
   add_foreign_key "solid_queue_batch_executions", "solid_queue_batches", column: "batch_id", on_delete: :cascade
   add_foreign_key "solid_queue_batch_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

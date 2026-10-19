@@ -86,6 +86,9 @@ CI runs the same checks (`scan_ruby`, `lint`, `test`) and they must pass to merg
   validation problem with its path (see `Research::ReplaceReport`).
 - Accounts are never created through the API: `bin/rails admin:create` (local) or the one-time
   `admin:bootstrap` (hosts without a console).
+- Admins must use two-factor login (`TwoFactorAuthenticatable`, `require_two_factor!` in the admin
+  base controller). New admin endpoints get it automatically; only session and setup endpoints skip it.
+- Secrets at rest use Active Record Encryption (`encrypts`); keys live in the encrypted credentials.
 - URLs that reach the client are validated with `http_url: true` **and** a database check
   constraint (http(s) only).
 - Rules the product depends on are enforced in the database as well as the model: check
